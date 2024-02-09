@@ -1,0 +1,198 @@
+---
+title: "Data Cleaning"
+author: "Elyse McFalls"
+date: "2024-02-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F)
+```
+
+```{r}
+library(tidyverse)
+library("readxl")
+```
+
+Current data issues
+- no file for demographic info by school
+- the CTE files have a different number of schools reprenseted (the file on CTE concentrators (2018-2022 data) only has 791 schools while the file on cte enrollment clusters (only 2019 data) has 1,113 schools and the file on cte enrollment (2010-2022 data) in general has 1,615 schools)
+- the CTE cluster enrollment file is really unclear: are those the clusters that were offered at each school?
+
+
+# Loading Data
+
+```{r}
+concentrators <- read.csv("data/2017-2022 CTE_concentrators.xlsx - Sheet1.csv")
+#absenteeism <- read.csv("data/chronic_absent.csv")
+tsi_csi <- read_excel("data/tsi_and_csi.xlsx")
+#standards <- read.csv("data/rcd_acc_pc (1).txt", sep = "\t")
+```
+
+```{r}
+cte_enrollment <- read_excel("data/rcd_cte_enrollment.xlsx")
+#demographics <- read_excel("data/rcd_prin_demo.xlsx")
+school_info <- read_excel("data/rcd_location.xlsx")
+cte_enrollment_clusters <- read_excel("data/rcd_cte_enrollment_cluster.xlsx")
+```
+
+# Cleaning Data
+
+
+Only keeping data from 2018-2022
+
+```{r}
+years <- c(2018, 2019, 2020, 2021, 2022)
+```
+
+```{r}
+concentrators <- concentrators %>%
+  filter(year %in% years)
+
+tsi_csi <- tsi_csi %>%
+  filter(year %in% years)
+
+# standards <- standards %>%
+#   filter(year %in% years)
+
+school_info <- school_info %>%
+  mutate(title_i = ifelse(is.na(title_i), 'N', title_i)) %>%
+  filter(year %in% years)
+```
+
+```{r}
+# widening concentrators data
+concentrators <- concentrators %>%
+  complete(year, agency_code, career_cluster, fill = list(num_concentrators = 0)) %>%
+  pivot_wider(names_from = career_cluster, values_from = num_concentrators) 
+```
+
+```{r}
+# getting data for clusters per school
+clusters_per_school <- cte_enrollment_clusters %>%
+  mutate(i = 1) %>%
+  complete(year, agency_code, career_cluster, fill = list(i = 0)) %>%
+  pivot_wider(names_from = career_cluster, values_from = i)
+```
+
+
+# Combining data
+
+
+```{r}
+df_concentrators <- school_info %>%
+  # only select schools with CTE enrollment data
+  filter(agency_code %in% cte_enrollment$agency_code) %>%
+  #mutate(title_i = ifelse(is.na(title_i), F, T)) %>%
+  left_join(cte_enrollment, by = c("year", "agency_code")) %>%
+  left_join(concentrators, by = c("year", "agency_code")) %>%
+  select(-street_addr, -street_addr2, -state, -phone, -url, -super_name, -esea, -stem) %>%
+  mutate_at(21:36, funs(round((. / stu_enroll) * 100, 3)))
+```
+
+```{r}
+clusters_per_school <- school_info %>%
+  filter(year == 2019) %>%
+  # only select schools with CTE enrollment data
+  filter(agency_code %in% cte_enrollment$agency_code) %>%
+  mutate(title_i = ifelse(is.na(title_i), 'N', 'Y')) %>%
+  left_join(clusters_per_school, by = c("year", "agency_code"))
+```
+
+```{r}
+write.csv(df_concentrators, "data/school_concentrator_info.csv")
+write.csv(clusters_per_school, "data/school_cluster_info.csv")
+```
+
+
+# EDA
+
+
+## Are there differences in what clusters are available?
+
+```{r}
+# all 2019 data, except for CD, non title I schools have a higher percentage of each cluster 
+clusters_per_school %>%
+  group_by(title_i) %>%
+  summarise(across(AAVC:TRAN, ~ mean(.x, na.rm = TRUE))) %>%
+  pivot_longer(!title_i, names_to = "career_cluster", values_to = "pct_have") %>%
+  ggplot(aes(x = career_cluster, y = pct_have, fill = title_i, group = title_i)) +
+  geom_bar(stat = "identity", position = "dodge")
+```
+
+```{r}
+# each school type has the same top 5 common clusters, although they are more prevelant in non title i schools 
+clusters_per_school %>%
+  group_by(title_i) %>%
+  summarise(across(AAVC:TRAN, ~ mean(.x, na.rm = TRUE))) %>%
+  pivot_longer(!title_i, names_to = "career_cluster", values_to = "pct_have") %>%
+  group_by(title_i) %>%
+  arrange(desc(pct_have)) %>%
+  slice(1:5)
+```
+
+
+## Are there differences in CTE participation?
+
+```{r}
+# participation rates were similar from 2018-2021 then dropped off in 2022
+df_concentrators %>%
+  group_by(year, title_i) %>%
+  summarise(mean_pct = mean(pct, na.rm = T)) %>%
+  pivot_wider(names_from = year, values_from = mean_pct)
+```
+
+
+## What schools do not have cluster concentrator data?
+
+```{r}
+# title 1 schools are less likely to have data for concentrators
+df_concentrators %>%
+  mutate(no_concen_data = ifelse(is.na(EDUC), T, F)) %>%
+  group_by(title_i, no_concen_data) %>%
+  count() %>%
+  group_by(title_i) %>%
+  mutate(prop = n/sum(n))
+```
+
+```{r}
+# interestingly half of the CTE schools do not have CTE data
+# vocational, alternative, and magnet schools are more likely to have this data
+df_concentrators %>%
+  mutate(no_concen_data = ifelse(is.na(EDUC), T, F)) %>%
+  group_by(school_type, no_concen_data) %>%
+  count() %>%
+  group_by(school_type) %>%
+  mutate(prop = n/sum(n))
+```
+
+
+## Where do most kids concentrate for each school type
+
+```{r fig.width=10, fig.height=4.5}
+# it looks like the clusters most students concentrate in is pretty simialr for both school types
+df_concentrators %>%
+  group_by(year, title_i) %>%
+  summarise(across(AAVC:TRAN, ~ mean(.x, na.rm = TRUE))) %>%
+  pivot_longer(!c(year, title_i), names_to = "career_clusters", values_to = "avg_pct_concentrator") %>%
+  ggplot(aes(x = year, y = avg_pct_concentrator, group = career_clusters, color = career_clusters)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~title_i)
+```
+
+```{r}
+df %>%
+  group_by(year, title_i) %>%
+  summarise(across(AAVC:TRAN, ~ mean(.x, na.rm = TRUE))) %>%
+  filter(title_i == 'N') %>%
+  summarise(across(AAVC:TRAN, ~ max(.x, na.rm = TRUE)))
+```
+
+```{r}
+df %>%
+  group_by(year, title_i) %>%
+  summarise(across(AAVC:TRAN, ~ mean(.x, na.rm = TRUE))) %>%
+  filter(title_i == 'Y') %>%
+  summarise(across(AAVC:TRAN, ~ max(.x, na.rm = TRUE)))
+```
