@@ -83,7 +83,7 @@ clusters_per_school <- cte_enrollment_clusters %>%
 df_concentrators <- school_info %>%
   # only select schools with CTE enrollment data
   filter(agency_code %in% cte_enrollment$agency_code) %>%
-  #mutate(title_i = ifelse(is.na(title_i), F, T)) %>%
+  #mutate(title_i = ifelse(is.na(title_i), 'N', 'Y')) %>%
   left_join(cte_enrollment, by = c("year", "agency_code")) %>%
   left_join(concentrators, by = c("year", "agency_code")) %>%
   select(-street_addr, -street_addr2, -state, -phone, -url, -super_name, -esea, -stem) %>%
@@ -102,6 +102,11 @@ clusters_per_school <- school_info %>%
 ```{r}
 write.csv(df_concentrators, "data/school_concentrator_info.csv")
 write.csv(clusters_per_school, "data/school_cluster_info.csv")
+```
+
+
+```{r}
+cte_data <- read_csv("data/school_concentrator_info.csv")
 ```
 
 
