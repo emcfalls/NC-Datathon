@@ -24,14 +24,14 @@ Current data issues
 
 ```{r}
 concentrators <- read.csv("data/2017-2022 CTE_concentrators.xlsx - Sheet1.csv")
-#absenteeism <- read.csv("data/chronic_absent.csv")
+absenteeism <- read.csv("data/chronic_absent.csv")
 tsi_csi <- read_excel("data/tsi_and_csi.xlsx")
 #standards <- read.csv("data/rcd_acc_pc (1).txt", sep = "\t")
 ```
 
 ```{r}
 cte_enrollment <- read_excel("data/rcd_cte_enrollment.xlsx")
-#demographics <- read_excel("data/rcd_prin_demo.xlsx")
+demographics <- read_excel("data/rcd_prin_demo.xlsx")
 school_info <- read_excel("data/rcd_location.xlsx")
 cte_enrollment_clusters <- read_excel("data/rcd_cte_enrollment_cluster.xlsx")
 ```
@@ -52,12 +52,18 @@ concentrators <- concentrators %>%
 tsi_csi <- tsi_csi %>%
   filter(year %in% years)
 
-# standards <- standards %>%
-#   filter(year %in% years)
-
 school_info <- school_info %>%
   mutate(title_i = ifelse(is.na(title_i), 'N', title_i)) %>%
   filter(year %in% years)
+```
+
+
+```{r}
+demo <- demographics %>%
+  filter(year %in% years) %>%
+  complete(year, agency_code, subgroup, fill = list(pct_prin_demo = 0)) %>%
+  pivot_wider(names_from = subgroup, values_from = pct_prin_demo) %>%
+  mutate(majority_white = ifelse(WH7 > 0.5, T, F))
 ```
 
 ```{r}
@@ -75,19 +81,34 @@ clusters_per_school <- cte_enrollment_clusters %>%
   pivot_wider(names_from = career_cluster, values_from = i)
 ```
 
+```{r}
+absenteeism <- absenteeism %>%
+  mutate(agency_code = paste0(0, agency_code)) %>%
+  select(-count, -den, -masking) %>%
+  pivot_wider(names_from = subgroup, values_from = pct, names_prefix = "absent_group_")
+```
 
 # Combining data
 
+```{r}
+school_info <- school_info %>%
+  # only select schools with CTE enrollment data
+  filter(agency_code %in% cte_enrollment$agency_code) %>%
+  left_join(cte_enrollment, by = c("year", "agency_code")) %>%
+  left_join(tsi_csi, by = c("year", "agency_code")) %>%
+  left_join(demo, by = c("year", "lea_code" = "agency_code")) %>%
+  left_join(absenteeism, by = c("year", "agency_code"))
+```
 
 ```{r}
-df_concentrators <- school_info %>%
+ df_concentrator <- school_info %>%
   # only select schools with CTE enrollment data
   filter(agency_code %in% cte_enrollment$agency_code) %>%
   #mutate(title_i = ifelse(is.na(title_i), 'N', 'Y')) %>%
-  left_join(cte_enrollment, by = c("year", "agency_code")) %>%
+  #left_join(cte_enrollment, by = c("year", "agency_code")) %>%
   left_join(concentrators, by = c("year", "agency_code")) %>%
   select(-street_addr, -street_addr2, -state, -phone, -url, -super_name, -esea, -stem) %>%
-  mutate_at(21:36, funs(round((. / stu_enroll) * 100, 3)))
+  mutate_at(vars(AAVC:TRAN), funs(round((. / stu_enroll) * 100, 3)))
 ```
 
 ```{r}
@@ -95,28 +116,65 @@ clusters_per_school <- school_info %>%
   filter(year == 2019) %>%
   # only select schools with CTE enrollment data
   filter(agency_code %in% cte_enrollment$agency_code) %>%
-  mutate(title_i = ifelse(is.na(title_i), 'N', 'Y')) %>%
+  #mutate(title_i = ifelse(is.na(title_i), 'N', 'Y')) %>%
   left_join(clusters_per_school, by = c("year", "agency_code"))
 ```
 
 ```{r}
-write.csv(df_concentrators, "data/school_concentrator_info.csv")
-write.csv(clusters_per_school, "data/school_cluster_info.csv")
-```
-
-
-```{r}
-cte_data <- read_csv("data/school_concentrator_info.csv")
+write.csv(school_info, "data/school_information.csv")
+write.csv(df_concentrator, "data/concentrator_information.csv")
+write.csv(clusters_per_school, "data/career_cluster_information.csv")
 ```
 
 
 # EDA
 
+## Absenteeism
+
+```{r}
+school_info %>%
+  filter(year %in% c(2018:2020)) %>%
+  group_by(title_i) %>%
+  summarise(mean_pct_absent = mean(absent_group_ALL, na.rm = T))
+```
+
+```{r}
+school_info %>%
+  filter(year %in% c(2018:2020)) %>%
+  group_by(majority_white) %>%
+  summarise(mean_pct_absent = mean(absent_group_ALL, na.rm = T))
+```
+
+```{r}
+# consistently underperforming subgroups
+school_info %>%
+  filter(year %in% c(2018:2020)) %>%
+  group_by(tsi_cu) %>%
+  summarise(mean_pct_absent = mean(absent_group_ALL, na.rm = T))
+```
+
+
+```{r}
+# consistently underperforming subgroups
+school_info %>%
+  filter(year %in% c(2018:2020)) %>%
+  group_by(title_i, tsi_cu) %>%
+  count()
+```
+
+```{r}
+# low performing 
+school_info %>%
+  filter(year %in% c(2018:2020)) %>%
+  group_by(csi_lp) %>%
+  summarise(mean_pct_absent = mean(absent_group_ALL, na.rm = T))
+```
 
 ## Are there differences in what clusters are available?
 
 ```{r}
 # all 2019 data, except for CD, non title I schools have a higher percentage of each cluster 
+# plot absolute difference 
 clusters_per_school %>%
   group_by(title_i) %>%
   summarise(across(AAVC:TRAN, ~ mean(.x, na.rm = TRUE))) %>%
@@ -126,23 +184,77 @@ clusters_per_school %>%
 ```
 
 ```{r}
-# each school type has the same top 5 common clusters, although they are more prevelant in non title i schools 
+# not title 1 - title 1
 clusters_per_school %>%
   group_by(title_i) %>%
   summarise(across(AAVC:TRAN, ~ mean(.x, na.rm = TRUE))) %>%
   pivot_longer(!title_i, names_to = "career_cluster", values_to = "pct_have") %>%
-  group_by(title_i) %>%
-  arrange(desc(pct_have)) %>%
-  slice(1:5)
+  arrange(career_cluster) %>%
+  ungroup () %>%
+  group_by(career_cluster) %>%
+  summarise(access_disparity = pct_have[1] - pct_have[2]) %>%
+  ggplot(aes(x = career_cluster, y = access_disparity)) +
+  geom_bar(stat = "identity") +
+  geom_text(position = "top", )
 ```
 
+```{r}
+# majrotity white schools - majority non-white schools 
+clusters_per_school %>%
+  group_by(year, majority_white) %>%
+  summarise(across(AAVC:TRAN, ~ mean(.x, na.rm = TRUE))) %>%
+  pivot_longer(!c(year, majority_white), names_to = "career_cluster", values_to = "pct_have") %>%
+  arrange(career_cluster) 
+```
+
+
+```{r}
+clusters_per_school %>%
+  group_by(majority_white) %>%
+  summarise(across(AAVC:TRAN, ~ mean(.x, na.rm = TRUE))) %>%
+  pivot_longer(!majority_white, names_to = "career_cluster", values_to = "pct_have") %>%
+  ggplot(aes(x = career_cluster, y = pct_have, fill = majority_white, group = majority_white)) +
+  geom_bar(stat = "identity", position = "dodge")
+```
+
+```{r}
+clusters_per_school %>%
+  group_by(majority_white) %>%
+  summarise(across(AAVC:TRAN, ~ mean(.x, na.rm = TRUE))) %>%
+  pivot_longer(!majority_white, names_to = "career_cluster", values_to = "pct_have") %>%
+  ggplot(aes(x = career_cluster, y = pct_have, fill = majority_white, group = majority_white)) +
+  geom_bar(stat = "identity", position = "dodge")
+```
+
+
+```{r}
+# each school type has the same top 5 common clusters, although they are more prevelant in non title i schools 
+clusters_per_school %>%
+  group_by(title_i) %>%
+  summarise(across(AAVC:TRAN, ~ mean(.x, na.rm = TRUE)))
+```
+```{r}
+# each school type has the same top 5 common clusters, although they are more prevelant in non title i schools 
+clusters_per_school %>%
+  group_by(majority_white) %>%
+  summarise(across(AAVC:TRAN, ~ mean(.x, na.rm = TRUE)))
+```
 
 ## Are there differences in CTE participation?
 
 ```{r}
 # participation rates were similar from 2018-2021 then dropped off in 2022
-df_concentrators %>%
+df_concentrator %>%
   group_by(year, title_i) %>%
+  summarise(mean_pct = mean(pct, na.rm = T)) %>%
+  ggplot(aes(x =year, y = mean_pct, group = title_i, color = title_i)) +
+  geom_line()
+```
+
+```{r}
+# participation rates were similar from 2018-2021 then dropped off in 2022
+df_concentrator %>%
+  group_by(year, majority_white) %>%
   summarise(mean_pct = mean(pct, na.rm = T)) %>%
   pivot_wider(names_from = year, values_from = mean_pct)
 ```
@@ -172,11 +284,13 @@ df_concentrators %>%
 ```
 
 
+
+
 ## Where do most kids concentrate for each school type
 
 ```{r fig.width=10, fig.height=4.5}
 # it looks like the clusters most students concentrate in is pretty simialr for both school types
-df_concentrators %>%
+df_concentrator %>%
   group_by(year, title_i) %>%
   summarise(across(AAVC:TRAN, ~ mean(.x, na.rm = TRUE))) %>%
   pivot_longer(!c(year, title_i), names_to = "career_clusters", values_to = "avg_pct_concentrator") %>%
