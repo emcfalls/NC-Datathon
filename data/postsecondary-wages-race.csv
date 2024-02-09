@@ -1,0 +1,61 @@
+Job Type,Annual wage; mean,code,Race,Proportion
+Agricultural & Natural Resources Tech,61668.6,AGNR,White Proportion,0.8198529411764706
+Architecture and Construction,57616.43,ARCH,White Proportion,0.6042424242424242
+"Arts, Audio/Video Techn and Comm",72514.67,AAVC,White Proportion,0.6358897989575577
+Business Management and Administration,105087.31,BMA,White Proportion,0.513006062976726
+Education and Training,66332.27,EDUC,White Proportion,0.45402843601895737
+Finance,82748.85,FINA,White Proportion,0.5712836123795028
+Health Science,147070.7,HLTH,White Proportion,0.6478393528702192
+Hospitality and Tourism,35527.92,HOSP,White Proportion,0.46993524514338575
+Human Services,50009.06,HUMA,White Proportion,0.5867182462927144
+Information Technology,78226.36,INFO,White Proportion,0.580064308681672
+"Law, Public Safety, Corrections and Security",55320.97,LAW,White Proportion,0.598065445564931
+Manufacturing,45370.72,MANU,White Proportion,0.7428249859313449
+Marketing Sales & Services,61059.52,MRKT,White Proportion,1.0
+"Science, Tech, Engineering and Math",89680.0,STEM,White Proportion,0.6928725701943844
+"Transportation, Distribution & Logistics",49957.8,TRAN,White Proportion,0.6245222929936306
+Agricultural & Natural Resources Tech,61668.6,AGNR,Black Proportion,0.0625
+Architecture and Construction,57616.43,ARCH,Black Proportion,0.14
+"Arts, Audio/Video Techn and Comm",72514.67,AAVC,Black Proportion,0.1720029784065525
+Business Management and Administration,105087.31,BMA,Black Proportion,0.31087424212790926
+Education and Training,66332.27,EDUC,Black Proportion,0.364218009478673
+Finance,82748.85,FINA,Black Proportion,0.16945712836123794
+Health Science,147070.7,HLTH,Black Proportion,0.184063010004967
+Hospitality and Tourism,35527.92,HOSP,Black Proportion,0.3135985198889917
+Human Services,50009.06,HUMA,Black Proportion,0.23372018052869117
+Information Technology,78226.36,INFO,Black Proportion,0.21672025723472668
+"Law, Public Safety, Corrections and Security",55320.97,LAW,Black Proportion,0.21259518419427867
+Manufacturing,45370.72,MANU,Black Proportion,0.09988745075970737
+Marketing Sales & Services,61059.52,MRKT,Black Proportion,0.0
+"Science, Tech, Engineering and Math",89680.0,STEM,Black Proportion,0.11101511879049676
+"Transportation, Distribution & Logistics",49957.8,TRAN,Black Proportion,0.16050955414012738
+Agricultural & Natural Resources Tech,61668.6,AGNR,Hispanic/Latino Proportion,0.08088235294117647
+Architecture and Construction,57616.43,ARCH,Hispanic/Latino Proportion,0.19121212121212122
+"Arts, Audio/Video Techn and Comm",72514.67,AAVC,Hispanic/Latino Proportion,0.12807148175725985
+Business Management and Administration,105087.31,BMA,Hispanic/Latino Proportion,0.11402307842753764
+Education and Training,66332.27,EDUC,Hispanic/Latino Proportion,0.12630331753554502
+Finance,82748.85,FINA,Hispanic/Latino Proportion,0.17605276509386097
+Health Science,147070.7,HLTH,Hispanic/Latino Proportion,0.09643085219612574
+Hospitality and Tourism,35527.92,HOSP,Hispanic/Latino Proportion,0.13135985198889916
+Human Services,50009.06,HUMA,Hispanic/Latino Proportion,0.12637008381689233
+Information Technology,78226.36,INFO,Hispanic/Latino Proportion,0.1112540192926045
+"Law, Public Safety, Corrections and Security",55320.97,LAW,Hispanic/Latino Proportion,0.1358304177814365
+Manufacturing,45370.72,MANU,Hispanic/Latino Proportion,0.09622960045019696
+Marketing Sales & Services,61059.52,MRKT,Hispanic/Latino Proportion,0.0
+"Science, Tech, Engineering and Math",89680.0,STEM,Hispanic/Latino Proportion,0.12311015118790497
+"Transportation, Distribution & Logistics",49957.8,TRAN,Hispanic/Latino Proportion,0.14745222929936305
+Agricultural & Natural Resources Tech,61668.6,AGNR,Asian Proportion,0.0027573529411764708
+Architecture and Construction,57616.43,ARCH,Asian Proportion,0.02181818181818182
+"Arts, Audio/Video Techn and Comm",72514.67,AAVC,Asian Proportion,0.028294862248696945
+Business Management and Administration,105087.31,BMA,Asian Proportion,0.01633092118130256
+Education and Training,66332.27,EDUC,Asian Proportion,0.014928909952606635
+Finance,82748.85,FINA,Asian Proportion,0.047691527143581935
+Health Science,147070.7,HLTH,Asian Proportion,0.021854821542609808
+Hospitality and Tourism,35527.92,HOSP,Asian Proportion,0.025901942645698426
+Human Services,50009.06,HUMA,Asian Proportion,0.014506769825918761
+Information Technology,78226.36,INFO,Asian Proportion,0.04983922829581994
+"Law, Public Safety, Corrections and Security",55320.97,LAW,Asian Proportion,0.007408931878987446
+Manufacturing,45370.72,MANU,Asian Proportion,0.012099043331457513
+Marketing Sales & Services,61059.52,MRKT,Asian Proportion,0.0
+"Science, Tech, Engineering and Math",89680.0,STEM,Asian Proportion,0.03498920086393088
+"Transportation, Distribution & Logistics",49957.8,TRAN,Asian Proportion,0.029936305732484077
